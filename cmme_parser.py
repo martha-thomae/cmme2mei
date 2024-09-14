@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from cmme_model_events import Pitch, MiscItemEvent, DotEvent, NoteEvent, MensurationEvent, OriginalTextEvent, ClefEvent, \
     ModernText, RestEvent, ProportionEvent, ColorChangeEvent, CustosEvent, LineEndEvent, ModernKeySignatureEvent, \
-    MultiEvent
+    MultiEvent, EventAttributes, Proportion
 
 
 class PieceParser:
@@ -368,15 +368,57 @@ class PieceParser:
 
         return EventList(events)
 
-
-
-    def parse_clef(self, element):
-        appearance = element.find('{http://www.cmme.org}Appearance').text if element.find('{http://www.cmme.org}Appearance') is not None else None
-        staff_loc = element.find('{http://www.cmme.org}StaffLoc').text if element.find('{http://www.cmme.org}StaffLoc') is not None else None
-        pitch = self.parse_pitch(element.find('{http://www.cmme.org}Pitch'))
+    def parse_event_attributes(self, element) -> EventAttributes:
+        """
+        Parse the EventAttributes group, which includes optional elements:
+        Colored, Ambiguous, Editorial, Error, and EditorialCommentary.
+        """
+        # Parse Colored (True if present)
         colored = element.find('{http://www.cmme.org}Colored') is not None
 
-        return ClefEvent(appearance, staff_loc, pitch, colored)
+        # Parse Ambiguous (True if present)
+        ambiguous = element.find('{http://www.cmme.org}Ambiguous') is not None
+
+        # Parse Editorial (True if present)
+        editorial = element.find('{http://www.cmme.org}Editorial') is not None
+
+        # Parse Error (True if present)
+        error = element.find('{http://www.cmme.org}Error') is not None
+
+        # Parse EditorialCommentary (if present)
+        editorial_commentary_element = element.find('{http://www.cmme.org}EditorialCommentary')
+        editorial_commentary = editorial_commentary_element.text if editorial_commentary_element is not None else None
+
+        # Create and return EventAttributes object
+        return EventAttributes(colored, ambiguous, editorial, error, editorial_commentary)
+
+
+
+
+    def parse_clef(self, element) -> ClefEvent:
+        # Parse Appearance
+        appearance = element.find('{http://www.cmme.org}Appearance').text if element.find('{http://www.cmme.org}Appearance') is not None else None
+
+        # Parse StaffLoc as an integer
+        staff_loc = int(element.find('{http://www.cmme.org}StaffLoc').text) if element.find('{http://www.cmme.org}StaffLoc') is not None else None
+
+        # Parse Pitch (which uses the Locus group)
+        pitch_element = element.find('{http://www.cmme.org}Pitch')
+        if pitch_element is not None:
+            letter_name = pitch_element.find('{http://www.cmme.org}LetterName').text if pitch_element.find('{http://www.cmme.org}LetterName') is not None else None
+            octave_num = int(pitch_element.find('{http://www.cmme.org}OctaveNum').text) if pitch_element.find('{http://www.cmme.org}OctaveNum') is not None else None
+            pitch = Pitch(letter_name, octave_num)
+        else:
+            pitch = None
+
+        # Parse Signature (optional)
+        signature = element.find('{http://www.cmme.org}Signature') is not None
+
+        # Parse EventAttributes (referenced group)
+        event_attributes = self.parse_event_attributes(element)
+
+        return ClefEvent(appearance, staff_loc, pitch, event_attributes, signature)
+
 
     def parse_modern_text(self, element) -> ModernText:
         if element is None:
@@ -401,15 +443,62 @@ class PieceParser:
         phrase = element.find('{http://www.cmme.org}Phrase').text if element.find('{http://www.cmme.org}Phrase') is not None else None
         return OriginalTextEvent(phrase)
 
-    def parse_mensuration(self, element):
-        main_symbol = element.find('{http://www.cmme.org}MainSymbol').text if element.find('{http://www.cmme.org}MainSymbol') is not None else None
-        strokes = element.find('{http://www.cmme.org}Strokes').text if element.find('{http://www.cmme.org}Strokes') is not None else None
-        return MensurationEvent(main_symbol, strokes)
+    def parse_mensuration(self, element) -> MensurationEvent:
+        main_symbol = None
+        orientation = None
+        strokes = None
+        dot = False
+        number = None
+
+        # Handle Sign element
+        sign_el = element.find('{http://www.cmme.org}Sign')
+        if sign_el is not None:
+            main_symbol_el = sign_el.find('{http://www.cmme.org}MainSymbol')
+            main_symbol = main_symbol_el.text if main_symbol_el is not None else None
+
+            orientation_el = sign_el.find('{http://www.cmme.org}Orientation')
+            orientation = orientation_el.text if orientation_el is not None else None
+
+            strokes_el = sign_el.find('{http://www.cmme.org}Strokes')
+            strokes = int(strokes_el.text) if strokes_el is not None else None
+
+            dot = sign_el.find('{http://www.cmme.org}Dot') is not None
+
+        # Handle Number element (Proportion group)
+        number_el = element.find('{http://www.cmme.org}Number')
+        if number_el is not None:
+            number = self.parse_proportion(number_el)
+
+        # Parse optional StaffLoc
+        staff_loc_el = element.find('{http://www.cmme.org}StaffLoc')
+        staff_loc = int(staff_loc_el.text) if staff_loc_el is not None else None
+
+        # Parse MensInfo (if present)
+        mens_info = {}
+        mens_info_el = element.find('{http://www.cmme.org}MensInfo')
+        if mens_info_el is not None:
+            mens_info['prolatio'] = mens_info_el.find('{http://www.cmme.org}Prolatio').text if mens_info_el.find('{http://www.cmme.org}Prolatio') is not None else None
+            mens_info['tempus'] = mens_info_el.find('{http://www.cmme.org}Tempus').text if mens_info_el.find('{http://www.cmme.org}Tempus') is not None else None
+            mens_info['modus_minor'] = mens_info_el.find('{http://www.cmme.org}ModusMinor').text if mens_info_el.find('{http://www.cmme.org}ModusMinor') is not None else None
+            mens_info['modus_maior'] = mens_info_el.find('{http://www.cmme.org}ModusMaior').text if mens_info_el.find('{http://www.cmme.org}ModusMaior') is not None else None
+
+            tempo_change_el = mens_info_el.find('{http://www.cmme.org}TempoChange')
+            if tempo_change_el is not None:
+                mens_info['tempo_change'] = self.parse_proportion(tempo_change_el)
+
+        # Parse NoScoreEffect (True if present)
+        no_score_effect = element.find('{http://www.cmme.org}NoScoreEffect') is not None
+
+        # Parse EventAttributes
+        event_attributes = self.parse_event_attributes(element)
+
+        # Return the parsed MensurationEvent object
+        return MensurationEvent(main_symbol, orientation, strokes, dot, number, staff_loc, mens_info, no_score_effect, event_attributes)
 
     def parse_note(self, element):
         note_type = element.find('{http://www.cmme.org}Type').text if element.find('{http://www.cmme.org}Type') is not None else None
         letter_name = element.find('{http://www.cmme.org}LetterName').text if element.find('{http://www.cmme.org}LetterName') is not None else None
-        octave_num = element.find('{http://www.cmme.org}OctaveNum').text if element.find('{http://www.cmme.org}OctaveNum') is not None else None
+        octave_num = int(element.find('{http://www.cmme.org}OctaveNum').text) if element.find('{http://www.cmme.org}OctaveNum') is not None else None
         lig = element.find('{http://www.cmme.org}Lig').text if element.find('{http://www.cmme.org}Lig') is not None else None
         stem_dir = element.find('{http://www.cmme.org}Stem/Dir').text if element.find('{http://www.cmme.org}Stem/Dir') is not None else None
         modern_text = self.parse_modern_text(element.find('{http://www.cmme.org}ModernText'))
@@ -431,7 +520,7 @@ class PieceParser:
         if element is None:
             return None
         letter_name = element.find('{http://www.cmme.org}LetterName').text if element.find('{http://www.cmme.org}LetterName') is not None else None
-        octave_num = element.find('{http://www.cmme.org}OctaveNum').text if element.find('{http://www.cmme.org}OctaveNum') is not None else None
+        octave_num = int(element.find('{http://www.cmme.org}OctaveNum').text) if element.find('{http://www.cmme.org}OctaveNum') is not None else None
         return Pitch(letter_name, octave_num)
 
 
@@ -444,11 +533,15 @@ class PieceParser:
 
         return RestEvent(rest_type, length_num, length_den, bottom_staff_line, num_spaces)
 
-    def parse_proportion(self, element):
-        proportion_num = element.find('{http://www.cmme.org}ProportionNum').text if element.find('{http://www.cmme.org}ProportionNum') is not None else None
-        proportion_den = element.find('{http://www.cmme.org}ProportionDen').text if element.find('{http://www.cmme.org}ProportionDen') is not None else None
+    def parse_proportion(self, element) -> ProportionEvent:
+        num_el = element.find('{http://www.cmme.org}Num')
+        den_el = element.find('{http://www.cmme.org}Den')
 
-        return ProportionEvent(proportion_num, proportion_den)
+        num = int(num_el.text) if num_el is not None else 1  # Default to 1 if missing
+        den = int(den_el.text) if den_el is not None else 1  # Default to 1 if missing
+
+        proportion = Proportion(num, den)
+        return ProportionEvent(proportion)
 
     def parse_color_change(self, element):
         primary_color = element.find('{http://www.cmme.org}PrimaryColor').text if element.find('{http://www.cmme.org}PrimaryColor') is not None else None

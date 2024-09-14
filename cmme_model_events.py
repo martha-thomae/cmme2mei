@@ -24,6 +24,14 @@ class ModernText:
     def __repr__(self):
         return f"ModernText(Syllables={self.syllables}, HasWordEnd={self.has_word_end})"
 
+class Proportion:
+    def __init__(self, num: int, den: int):
+        self.num = num
+        self.den = den
+
+    def __repr__(self):
+        return f"Proportion(Num={self.num}, Den={self.den})"
+
 
 class Event:
     """
@@ -36,17 +44,32 @@ class Event:
     def __repr__(self):
         return f"{self.__class__.__name__}(Type={self.event_type})"
 
+class EventAttributes:
+    def __init__(self, colored: bool = False, ambiguous: bool = False, editorial: bool = False, error: bool = False, editorial_commentary: str = None):
+        self.colored = colored
+        self.ambiguous = ambiguous
+        self.editorial = editorial
+        self.error = error
+        self.editorial_commentary = editorial_commentary
+
+    def __repr__(self):
+        return (f"EventAttributes(Colored={self.colored}, Ambiguous={self.ambiguous}, "
+                f"Editorial={self.editorial}, Error={self.error}, "
+                f"EditorialCommentary={self.editorial_commentary})")
+
+
 class ClefEvent(Event):
-    def __init__(self, appearance: Optional[str], staff_loc: Optional[int], pitch: Optional['Pitch'], colored: bool):
+    def __init__(self, appearance: str, staff_loc: int, pitch: Pitch, event_attributes: EventAttributes, signature: bool = False):
         super().__init__('Clef')
         self.appearance = appearance
         self.staff_loc = staff_loc
         self.pitch = pitch
-        self.colored = colored
+        self.signature = signature  # Optional (True if present)
+        self.event_attributes = event_attributes
 
     def __repr__(self):
         return (f"ClefEvent(Appearance={self.appearance}, StaffLoc={self.staff_loc}, "
-                f"Pitch={self.pitch}, Colored={self.colored})")
+                f"Pitch={self.pitch}, Signature={self.signature}, EventAttributes={self.event_attributes})")
 
 class NoteEvent(Event):
     def __init__(self, note_type: Optional[str], letter_name: Optional[str], octave_num: Optional[int],
@@ -72,13 +95,26 @@ class DotEvent(Event):
         return f"DotEvent(Pitch={self.pitch})"
 
 class MensurationEvent(Event):
-    def __init__(self, main_symbol: Optional[str], strokes: Optional[int]):
+    def __init__(self, main_symbol: Optional[str] = None, orientation: Optional[str] = None,
+                 strokes: Optional[int] = None, dot: bool = False, number: Optional[Proportion] = None,
+                 staff_loc: Optional[int] = None, mens_info: Optional[dict] = None,
+                 no_score_effect: bool = False, event_attributes: EventAttributes = None):
         super().__init__('Mensuration')
         self.main_symbol = main_symbol
+        self.orientation = orientation
         self.strokes = strokes
+        self.dot = dot
+        self.number = number  # ProportionEvent instance
+        self.staff_loc = staff_loc
+        self.mens_info = mens_info if mens_info else {}
+        self.no_score_effect = no_score_effect
+        self.event_attributes = event_attributes if event_attributes else EventAttributes()
 
     def __repr__(self):
-        return f"MensurationEvent(MainSymbol={self.main_symbol}, Strokes={self.strokes})"
+        return (f"MensurationEvent(MainSymbol={self.main_symbol}, Orientation={self.orientation}, "
+                f"Strokes={self.strokes}, Dot={self.dot}, Number={self.number}, StaffLoc={self.staff_loc}, "
+                f"MensInfo={self.mens_info}, NoScoreEffect={self.no_score_effect}, "
+                f"EventAttributes={self.event_attributes})")
 
 class OriginalTextEvent(Event):
     def __init__(self, phrase: Optional[str]):
@@ -109,13 +145,12 @@ class RestEvent(Event):
         return f"RestEvent(Type={self.rest_type}, Length={self.length_num}/{self.length_den}, BottomStaffLine={self.bottom_staff_line}, NumSpaces={self.num_spaces})"
 
 class ProportionEvent(Event):
-    def __init__(self, proportion_num: Optional[int], proportion_den: Optional[int]):
+    def __init__(self, proportion: Proportion):
         super().__init__('Proportion')
-        self.proportion_num = proportion_num
-        self.proportion_den = proportion_den
+        self.proportion = proportion
 
     def __repr__(self):
-        return f"ProportionEvent(Proportion={self.proportion_num}/{self.proportion_den})"
+        return f"ProportionEvent(Proportion={self.proportion.num}/{self.proportion.den})"
 
 class ColorChangeEvent(Event):
     def __init__(self, primary_color: Optional[str], secondary_color: Optional[str]):
