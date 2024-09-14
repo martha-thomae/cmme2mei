@@ -24,7 +24,6 @@ class NoteEvent:
 
         Args:
             element: The XML element containing NoteEvent data.
-            parse_modern_text: Helper function to parse ModernText.
 
         Returns:
             A NoteEvent object.
@@ -32,9 +31,7 @@ class NoteEvent:
         # Parse note type
         note_type = element.find('{http://www.cmme.org}Type').text if element.find('{http://www.cmme.org}Type') is not None else None
 
-        # Parse Pitch
-        pitch_element = element.find('{http://www.cmme.org}Pitch')
-        pitch = Pitch.parse(pitch_element) if pitch_element is not None else None
+        pitch = Pitch.parse(element) # the elements of the pitch are contained in the Note
 
         # Parse Ligature (Lig)
         lig = element.find('{http://www.cmme.org}Lig').text if element.find('{http://www.cmme.org}Lig') is not None else None

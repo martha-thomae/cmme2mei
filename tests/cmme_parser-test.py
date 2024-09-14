@@ -5,6 +5,8 @@ from model import Piece
 from model.clef import ClefEvent
 from model.events import EventAttributes
 from model.mensuration import MensurationEvent
+from model.modern_text import ModernText
+from model.note import NoteEvent
 from model.pitch import Pitch
 from model.original_text import OriginalTextEvent
 
@@ -83,6 +85,16 @@ class TestCMMEImporter(unittest.TestCase):
         )
         self.assertEqual(expected_mensuration_event, plainchant_events[3])
 
+        # Updated Note Event with new constructor
+        expected_note_event = NoteEvent(
+            note_type='Brevis',
+            pitch=Pitch(letter_name='F', octave_num=2),  # Pitch object
+            lig='Recta',  # Lig attribute from the XML
+            stem_dir=None,  # No stem direction provided in the XML snippet
+            modern_text=ModernText(syllables=['ba'], has_word_end=False)  # ModernText with syllables
+        )
+        self.assertEqual(expected_note_event, plainchant_events[5])
+
 
         # Second: mensural section
         mensural = music_sections[1].content
@@ -91,7 +103,9 @@ class TestCMMEImporter(unittest.TestCase):
         self.assertEqual(4, len(mensural.voices))
 
         mensural_basssus_events = mensural.voices[3].event_list.events
+        #self.assertEqual(161, len(mensural_basssus_events)) TO-DO Check it
 
+        #TO-DO Finish checking it
 
 
 if __name__ == '__main__':

@@ -14,11 +14,10 @@ Contributors:
     - [Contributor 1 Name], [Date], Changes: [Description of changes]
     - [Contributor 2 Name], [Date], Changes: [Description of changes]
 """
-
-from cmme_parser import PieceParser
+from model import Piece
 
 
 def cmme2mei(file_path):
-    parser = PieceParser()
-    piece = parser.parse_piece(file_path)
-    print(piece)
+    piece = Piece.parse(file_path)
+    # TO-DO Now, the MEI structure has to be created and exported
+
