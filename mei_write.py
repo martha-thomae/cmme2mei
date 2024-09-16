@@ -10,8 +10,25 @@ ET.register_namespace("", "http://www.music-encoding.org/ns/mei")
 ns = {"":"http://www.music-encoding.org/ns/mei"}
 
 # Start modifying the MEI tree with the information from CMME
+
+# Element: title
 title = meitree.findall('//title', ns)[0]
 title.text = cmmetree.general_data.title
 
+# Element: staffDef
+staffgrp = meitree.findall('//staffGrp', ns)[0]
+section1 = cmmetree.music_sections[1]
+
+for i in range(section1.content.num_voices):
+	staffdef = ET.SubElement(staffgrp, 'staffDef')
+	staffdef.set('lines', '5')
+	staffdef.set('n', str(i+1))
+	# # Clef
+	# clef
+	# staffdef.set('clef.line', '')
+	# staffdef.set('clef.shape', '')
+	# # Mensuration
+
+
 # Write output MEI file
-meitree.write('output7.xml','utf-8', xml_declaration=True)
+meitree.write('output11.xml','utf-8', xml_declaration=True)
