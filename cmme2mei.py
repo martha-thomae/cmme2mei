@@ -14,10 +14,18 @@ Contributors:
     - [Contributor 1 Name], [Date], Changes: [Description of changes]
     - [Contributor 2 Name], [Date], Changes: [Description of changes]
 """
+import os
+
 from model import Piece
 
 
-def cmme2mei(file_path):
-    piece = Piece.parse(file_path)
+def import_score(filename):
+    resource_path = os.path.join(os.path.dirname(__file__), filename)
+    with open(resource_path) as file:
+        file_contents = file.read()
+        piece = Piece.parse(file_contents)
+    return piece
+
+#fileout = import_score(file_path)
     # TO-DO Now, the MEI structure has to be created and exported
 
