@@ -9,6 +9,7 @@ def makeNote():
 	# then converPitch()
 	# convertDuration()
 	# convertModernTexttoLyrics()
+	# if <Colored/> -> @colored="true"
 	return None
 
 def convertPitch():
