@@ -1,9 +1,12 @@
 import xml.etree.ElementTree as ET
 from cmme2mei import import_score
+
+
 ET.register_namespace("", "http://www.music-encoding.org/ns/mei")
 ns = {"":"http://www.music-encoding.org/ns/mei"}
 currentScore = False
 clefShapes = ["C", "F", "G", "Gamma", "Frnd", "MODERNC", "MODERNF","MODERNC", "MODERNC"]
+signatureShapes = ["Bmol", "BmolDouble", "Bqua", "Diesis"]
 
 # ------------------------------ #
 # MEI document-related functions #
@@ -33,8 +36,11 @@ def addMetadata(meitree, cmmeObject):
 # ------------------- #
 # auxiliary functions #
 # ------------------- #
-def convertStaffLoc(cmmeStaffLoc):
+def convertStaffLocToLine(cmmeStaffLoc):
 	return str(int((int(cmmeStaffLoc) + 1) / 2))
+
+def convertStaffLocToLoc(cmmeStaffLoc):
+	return str(int(cmmeStaffLoc) - 1)
 
 def getVoiceNumber():
 	return False
@@ -45,39 +51,19 @@ def getVoiceNumber():
 
 # clef-related functions (MEI) #
 # ---------------------------- #
-def isClef(event):
-	return (type(event).__name__ == "ClefEvent" 
-		and event.appearance in clefShapes)
 
 def convertClef(cmmeClef):
 	meiClef = ET.Element('clef')
 	meiClef.set('shape', cmmeClef.appearance)
-	meiClef.set('line', convertStaffLoc(cmmeClef.staff_loc))
+	meiClef.set('line', convertStaffLocToLine(cmmeClef.staff_loc))
 	return meiClef
-
-def makeClefElement(staffDef, cmme_section, n):
-	# makes <clef> or <keySig> from <Clef>
-	# CMME uses <Clef> for clefs and signatures (having <Signature> as child)
-	# Clef <Appearance>: C, G, Gamma, Frnd... maybe MODERNG|MODERNG8|MODERNF|MODERNC
-	# Signature <Appearance>: Bmol, BmolDouble, Bqua, Diesis
-	# What about Fis and Fsqr???
-	# Clef
-	voice_n = cmme_section.content.voices[n]
-	# ASSUMPTION:
-	# First element on the list of events of the voice # n
-	# "will always be a clef"
-	# or a variantlist with a set of clefs
-	# if first element is a clef or variant list with a clef:
-	cmmeClef = voice_n.event_list.events[0]
-	if isClef(cmmeClef):
-		return convertClef(cmmeClef)
-	else:
-		print("First element isn't a clef. We should probably do something")
-	# else warn, but make staffdef without clef?
-
 
 # clef-related functions (cmme) #
 # ----------------------------- #
+def isClef(event):
+	return (type(event).__name__ == "ClefEvent" 
+		and event.appearance in clefShapes)
+
 def findClefInVoice(cmmeVoice):
 	# If this voice part begins with a clef, return it
 	for event in cmmeVoice.event_list.events:
@@ -108,7 +94,9 @@ def getDefaultReading(variantReadings):
 
 
 def findClefForVoiceNum(cmmetree, voiceNum):
-	# Search for the first clef in a CMME object given voice number
+	# Search for the first CMME voice matching voice num (across sections) and then look to
+	# see if there's a clef before any musical content (i.e. notes and rests). This
+	# is so it can be included in staffDef
 	for section in cmmetree.music_sections:
 		for voice in section.content.voices:
 			if voice.voice_num == voiceNum:
@@ -116,11 +104,93 @@ def findClefForVoiceNum(cmmetree, voiceNum):
 
 # key signature-related functions #
 # ------------------------------- #
-def makeSignatureElement(staffDef, cmme_section, n):
-	# If there is signature at the beginning of this voice in the section, add it here
+def convertSignatureOrAccidental(cmmeSignature):
+	# cmme Signature is now a sequence of Clef Elements
+	meiSig = ET.Element('keySig')
+	for element in cmmeSignature:
+		sign = ET.SubElement(meiSig, 'keyAccid')
+		sign.set('loc', convertStaffLocToLoc(element.staff_loc))
+		sign.set('accid', convertAppearanceToAccid(element.appearance))
+	return meiSig
+
+
+def isSignature(event):
+	labelledAsSignature = (type(event).__name__ == "ClefEvent" 
+		and event.signature)
+	if labelledAsSignature:
+		if event.appearance in signatureShapes:
+			return True
+		else:
+			print("Warning: Ignoring signature label on a:", event.appearance)
+			return False
+	else:
+		return False
+
+def isSignatureLike(event):
+	return (type(event).__name__ == "ClefEvent" 
+		and event.appearance in signatureShapes)
+
+def convertAppearanceToAccid(appearance):
+	if appearance == 'Bmol':
+		return 'f'
+	elif appearance == 'Bqua':
+		return 'n'
+	elif appearance == 'Diesis':
+		return 's'
+	elif appearance == 'BmolDouble':
+		print('WARNING: BmolDouble has been treated as Bmol')
+		return 'f'
+	else:
+		print("WARNING: Encountered unrecognised signature:". appearance)
+		return ''
+
+def findSigInEventList(events):
+	# If this voice part begins with a signature, return it
+	sig = False
+	for event in events:
+		if isSignature(event):
+			# We track sig because it's possible to have a sequence of sig elements
+			if sig:
+				sig.append(event)
+			else:
+				sig = [event]
+		elif sig:
+			# If we've had a signature element, assume that if we get a non-sig, that's it
+			return sig
+		elif isSignatureLike(event):
+			print("WARNING: Voice begins with a clef that looks like a signature")
+			print("WARNING: This will be treated as an `accidental', but you might wish to check")
+			return False
+		elif type(event).__name__ == "VariantReadings":
+			# If we have a default/preferred variant, check it for a clef
+			defaultReading = getDefaultReading(event)
+			if defaultReading:
+				readingSig = False
+				return findSigInEventList(defaultReading.music_events)
+			return False
+		elif type(event).__name__  == "MultiEvent":
+			# Multiple signature elements may be grouped as a MultiEvent
+			if(isSignature(event.events[0])):
+				return event.events
+		elif type(event).__name__ in ['NoteEvent', 'RestEvent']:
+			return False
 	return False
 
-def convertSignatureOrAccidental(cmme_clef):
+def findSignatureInVoice(cmmeVoice):
+	# If this voice part begins with a signature, return it
+	return findSigInEventList(cmmeVoice.event_list.events)
+
+def findSigForVoiceNum(cmmetree, voiceNum):
+	# Search for the first CMME voice matching voice num (across sections) and then look to
+	# see if there's a signature-like object before any musical content (i.e. notes and rests). This
+	# is so it can be included in staffDef
+	for section in cmmetree.music_sections:
+		for voice in section.content.voices:
+			if voice.voice_num == voiceNum:
+				return findSignatureInVoice(voice)
+
+def makeSignatureElement(staffDef, cmme_section, n):
+	# If there is signature at the beginning of this voice in the section, add it here
 	return False
 
 # mensuration-related functions #
@@ -147,11 +217,35 @@ def makeGlobalStaffDef(cmmetree, staffgrp):
 		if cmmeclef:
 			staffdef.append(convertClef(cmmeclef))
 		## Do all this again for mens and sig
+		# sig
+		cmmeSig = findSigForVoiceNum(cmmetree, i + 1)
+		if cmmeSig:
+			staffdef.append(convertSignatureOrAccidental(cmmeSig))
 
 # ----------------------------------- #
 # mdiv- and section-related functions #
 # ----------------------------------- #
-def makeSectionElement(cmme_musicsection):
+def addStaffElements(cmme_musicsection, mei_section_element, maxvoices):
+	# Find the numbers of the voices present in this MusicSection
+	# makes a <staff> element within <section> for each <Voice> descendant in <MusicSection>
+	cmme_voice_numbers_array = []
+	for cmmevoice in cmme_musicsection.content.voices:
+		cmme_voice_numbers_array.append(cmmevoice.voice_num)
+
+	# Add a <staff> and its @n to the <section> for each <staffDef> element 
+	# (so for the total number of voices in the piece)
+	for n in range(1, maxvoices + 1):
+		staff = ET.Element('staff')
+		mei_section_element.append(staff)
+		staff.set('n', str(n))
+		# Use @visible = false for the <staff> elements that are actually not present in the MusicSection
+		if n not in cmme_voice_numbers_array:
+			staff.set('visible', 'false')
+		# Add a <layer> to each <staff>
+		ET.SubElement(staff, 'layer')
+
+
+def makeSectionElement(cmme_musicsection, cmmetree):
 	# Make MEI section for this section
 	# If the section is 'plainchant', we need
 	#  some invisible staves for tacet voices
@@ -159,14 +253,18 @@ def makeSectionElement(cmme_musicsection):
 	#  do not use @notationtype, because in CMME
 	#  this is still mensural notation - it's 
 	#  just chant. 
-	section = ET.Element('section')
+	mei_section_element = ET.Element('section')
 	if cmme_musicsection.content.section_type == "Plainchant":
-		section.set("type", "Plainchant")
-	return section
+		mei_section_element.set("type", "Plainchant")
+	
+	maxvoices = cmmetree.voice_data.num_voices
+	addStaffElements(cmme_musicsection, mei_section_element, maxvoices)
+	return mei_section_element
 	
 
 
 def makeMdivElement(cmme_musicsection, cmmetree):
+	global currentScore
 	# mdiv -> score -> scoreDef -> staffGrp
 	mdiv = ET.Element('mdiv')
 	score = ET.SubElement(mdiv, 'score')
@@ -175,49 +273,21 @@ def makeMdivElement(cmme_musicsection, cmmetree):
 	staffgrp = ET.SubElement(scoredef, 'staffGrp')
 	makeGlobalStaffDef(cmmetree, staffgrp)
 	# mdiv -> score -> section
-	score.append(makeSectionElement(cmme_musicsection))
+	score.append(makeSectionElement(cmme_musicsection, cmmetree))
 	return mdiv
 
 def makeSections(meitree, cmmetree):
 	# Since: a) we know the max number of voices b) we can have non-shown staves 
 	# for inactive voices in a section c) the plainchant in CMME is really 
 	# mensural transcription of chant, we don't need multiple MDivs
+	global currentScore
 	meibody = meitree.find('.//body',ns)
 	for cmme_musicsection in cmmetree.music_sections:
 		if currentScore:
-			currentScore.append(makeSectionElement(cmme_musicsection))
+			currentScore.append(makeSectionElement(cmme_musicsection, cmmetree))
 		else:
 			# This should only happen for the first section
 			meibody.append(makeMdivElement(cmme_musicsection, cmmetree))
-
-""" def makeSections(meitree, cmmetree):
-	# creates sections or mDivs from <MusicSection>
-	# <section> if voice numbers stay identical, <mDiv> if voice number changes
-	# children of <MusicSection> are either <Plainchant> or <MensuralMusic>
-	# change @notationtype accordingly
-	# Useful code: section.content.num_voices and section.content.section_tyoe
-	# MusicSection --> Child: Plainchant | MensuralMusic --> child NumVoices
-	prevSectionType, prevNumvoices = False
-	meibody = meitree.find('.//body',ns)
-	for cmme_musicsection in cmmetree.music_sections:
-		sectiontype = cmme_musicsection.content.section_type
-		numvoices = cmme_musicsection.content.num_voices
-		if(not prevSectionType or sectiontype!= prevSectionType
-			or not prevNumvoices or numvoices!=prevNumvoices):
-			# Either this is the first section (so we need an mdiv) or there's a change of notation or voice count
-			meibody.append(makeMdivElement(cmme_musicsection))
-		else:
-			#make new section
-			if currentScore:
-				currentScore.append(makeSectionElement(cmme_musicsection))
-			else:
-				# error
-				print("Missing score element")
- """
-
-def makeStaffs():
-	# makes a <staff> element within <section> for each <Voice> descendant in <MusicSection>
-	return False
 
 def makeMensuration():
 	# creates a <mensur> element from <Mensuration>
@@ -241,4 +311,4 @@ meitree = createMEIDoc()
 #### some code
 addMetadata(meitree, cmmetree)
 makeSections(meitree, cmmetree)
-writeMEIDoc(meitree, "output.mei")
+writeMEIDoc(meitree, "outputLastChanges22.mei")
