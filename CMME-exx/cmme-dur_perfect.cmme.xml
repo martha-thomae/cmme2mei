@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Piece xmlns="http://www.cmme.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.cmme.org cmme.xsd" CMMEversion="0.97">
+  <GeneralData>
+    <Title>Title</Title>
+    <Composer>Composer</Composer>
+    <Editor>Editor</Editor>
+    <VariantVersion>
+      <Default />
+      <ID>Default</ID>
+    </VariantVersion>
+  </GeneralData>
+  <VoiceData>
+    <NumVoices>1</NumVoices>
+    <Voice>
+      <Name>[1]</Name>
+    </Voice>
+  </VoiceData>
+  <MusicSection>
+    <MensuralMusic>
+      <NumVoices>1</NumVoices>
+      <Voice>
+        <VoiceNum>1</VoiceNum>
+        <EventList>
+          <Mensuration>
+            <Sign>
+              <MainSymbol>O</MainSymbol>
+            </Sign>
+            <MensInfo>
+              <Prolatio>3</Prolatio>
+              <Tempus>2</Tempus>
+              <ModusMinor>3</ModusMinor>
+              <ModusMaior>3</ModusMaior>
+            </MensInfo>
+          </Mensuration>
+          <Note>
+            <Type>Maxima</Type>
+            <Length>
+              <Num>54</Num>
+              <Den>1</Den>
+            </Length>
+            <LetterName>X</LetterName>
+            <OctaveNum>0</OctaveNum>
+          </Note>
+          <Note>
+            <Type>Longa</Type>
+            <Length>
+              <Num>18</Num>
+              <Den>1</Den>
+            </Length>
+            <LetterName>X</LetterName>
+            <OctaveNum>0</OctaveNum>
+          </Note>
+          <Note>
+            <Type>Brevis</Type>
+            <Length>
+              <Num>6</Num>
+              <Den>1</Den>
+            </Length>
+            <LetterName>X</LetterName>
+            <OctaveNum>0</OctaveNum>
+          </Note>
+        </EventList>
+      </Voice>
+    </MensuralMusic>
+  </MusicSection>
+</Piece>
+

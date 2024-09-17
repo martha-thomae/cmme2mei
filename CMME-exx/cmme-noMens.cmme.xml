@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Piece xmlns="http://www.cmme.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.cmme.org cmme.xsd" CMMEversion="0.97">
+  <GeneralData>
+    <Title>Title</Title>
+    <Composer>Composer</Composer>
+    <Editor>Editor</Editor>
+    <VariantVersion>
+      <Default />
+      <ID>Default</ID>
+    </VariantVersion>
+  </GeneralData>
+  <VoiceData>
+    <NumVoices>1</NumVoices>
+    <Voice>
+      <Name>[1]</Name>
+    </Voice>
+  </VoiceData>
+  <MusicSection>
+    <MensuralMusic>
+      <NumVoices>1</NumVoices>
+      <Voice>
+        <VoiceNum>1</VoiceNum>
+        <EventList>
+          <Clef>
+            <Appearance>C</Appearance>
+            <StaffLoc>1</StaffLoc>
+            <Pitch>
+              <LetterName>C</LetterName>
+              <OctaveNum>3</OctaveNum>
+            </Pitch>
+          </Clef>
+          <Mensuration>
+            <Sign>
+              <MainSymbol>C</MainSymbol>
+            </Sign>
+          </Mensuration>
+          <Rest>
+            <Type>Maxima</Type>
+            <Length>
+              <Num>24</Num>
+              <Den>1</Den>
+            </Length>
+            <BottomStaffLine>2</BottomStaffLine>
+            <NumSpaces>2</NumSpaces>
+          </Rest>
+          <Rest>
+            <Type>Longa</Type>
+            <Length>
+              <Num>12</Num>
+              <Den>1</Den>
+            </Length>
+            <BottomStaffLine>2</BottomStaffLine>
+            <NumSpaces>3</NumSpaces>
+          </Rest>
+        </EventList>
+      </Voice>
+    </MensuralMusic>
+  </MusicSection>
+</Piece>
+

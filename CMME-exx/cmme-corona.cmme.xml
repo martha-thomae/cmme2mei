@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Piece xmlns="http://www.cmme.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.cmme.org cmme.xsd" CMMEversion="0.97">
+  <GeneralData>
+    <Title>Title</Title>
+    <Composer>Composer</Composer>
+    <Editor>Editor</Editor>
+    <VariantVersion>
+      <Default />
+      <ID>Default</ID>
+    </VariantVersion>
+  </GeneralData>
+  <VoiceData>
+    <NumVoices>1</NumVoices>
+    <Voice>
+      <Name>[1]</Name>
+    </Voice>
+  </VoiceData>
+  <MusicSection>
+    <MensuralMusic>
+      <NumVoices>1</NumVoices>
+      <Voice>
+        <VoiceNum>1</VoiceNum>
+        <EventList>
+          <Clef>
+            <Appearance>C</Appearance>
+            <StaffLoc>5</StaffLoc>
+            <Pitch>
+              <LetterName>C</LetterName>
+              <OctaveNum>3</OctaveNum>
+            </Pitch>
+          </Clef>
+          <Note>
+            <Type>Semibrevis</Type>
+            <Length>
+              <Num>2</Num>
+              <Den>1</Den>
+            </Length>
+            <LetterName>C</LetterName>
+            <OctaveNum>3</OctaveNum>
+            <Corona />
+          </Note>
+        </EventList>
+      </Voice>
+    </MensuralMusic>
+  </MusicSection>
+</Piece>
+

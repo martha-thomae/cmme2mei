@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Piece xmlns="http://www.cmme.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.cmme.org cmme.xsd" CMMEversion="0.97">
+  <GeneralData>
+    <Title>Title</Title>
+    <Composer>Composer</Composer>
+    <Editor>Editor</Editor>
+    <VariantVersion>
+      <Default />
+      <ID>Default</ID>
+    </VariantVersion>
+  </GeneralData>
+  <VoiceData>
+    <NumVoices>1</NumVoices>
+    <Voice>
+      <Name>[1]</Name>
+    </Voice>
+  </VoiceData>
+  <MusicSection>
+    <MensuralMusic>
+      <NumVoices>1</NumVoices>
+      <Voice>
+        <VoiceNum>1</VoiceNum>
+        <EventList>
+          <Clef>
+            <Appearance>C</Appearance>
+            <StaffLoc>1</StaffLoc>
+            <Pitch>
+              <LetterName>C</LetterName>
+              <OctaveNum>3</OctaveNum>
+            </Pitch>
+          </Clef>
+          <MultiEvent>
+            <Clef>
+              <Appearance>Bmol</Appearance>
+              <StaffLoc>0</StaffLoc>
+              <Pitch>
+                <LetterName>B</LetterName>
+                <OctaveNum>3</OctaveNum>
+              </Pitch>
+              <Signature />
+            </Clef>
+            <Clef>
+              <Appearance>Bmol</Appearance>
+              <StaffLoc>7</StaffLoc>
+              <Pitch>
+                <LetterName>B</LetterName>
+                <OctaveNum>4</OctaveNum>
+              </Pitch>
+              <Signature />
+            </Clef>
+          </MultiEvent>
+          <MultiEvent>
+            <Clef>
+              <Appearance>Bmol</Appearance>
+              <StaffLoc>0</StaffLoc>
+              <Pitch>
+                <LetterName>B</LetterName>
+                <OctaveNum>3</OctaveNum>
+              </Pitch>
+              <Signature />
+            </Clef>
+            <Clef>
+              <Appearance>Bmol</Appearance>
+              <StaffLoc>3</StaffLoc>
+              <Pitch>
+                <LetterName>E</LetterName>
+                <OctaveNum>3</OctaveNum>
+              </Pitch>
+              <Signature />
+            </Clef>
+          </MultiEvent>
+          <MultiEvent>
+            <Note>
+              <Type>Brevis</Type>
+              <Length>
+                <Num>4</Num>
+                <Den>1</Den>
+              </Length>
+              <LetterName>C</LetterName>
+              <OctaveNum>3</OctaveNum>
+            </Note>
+            <Note>
+              <Type>Brevis</Type>
+              <Length>
+                <Num>4</Num>
+                <Den>1</Den>
+              </Length>
+              <LetterName>G</LetterName>
+              <OctaveNum>3</OctaveNum>
+            </Note>
+          </MultiEvent>
+        </EventList>
+      </Voice>
+    </MensuralMusic>
+  </MusicSection>
+</Piece>
+
