@@ -34,7 +34,7 @@ def addMetadata(meitree, cmmeObject):
 # auxiliary functions #
 # ------------------- #
 def convertStaffLoc(cmmeStaffLoc):
-	return str((int(cmmeStaffLoc) + 1) / 2)
+	return str(int((int(cmmeStaffLoc) + 1) / 2))
 
 def getVoiceNumber():
 	return False
@@ -132,21 +132,6 @@ def makeMensElement(staffDef, cmme_section, n):
 
 # make staffDef functions #
 # ----------------------- #
-""" def makeStaffDefs(cmme_section, staffgrp):
-	for i in range(cmme_section.content.num_voices):
-		staffdef = ET.SubElement(staffgrp, 'staffDef')
-		staffdef.set('lines', '5')
-		# Should we use actual staff numbers rather than i?
-		clef = makeClefElement(staffdef, cmme_section, i)
-		if clef:
-			staffdef.append(clef)
-		mens = makeMensElement(staffdef, cmme_section, i)
-		if mens:
-			staffdef.append(mens)
-		sig = makeSignatureElement(staffdef, cmme_section, i)
-		if sig:
-			staffdef.append(sig) """
-
 def makeGlobalStaffDef(cmmetree, staffgrp):
 	# A global list of voices (rather than one per section)
 	for i in range(cmmetree.voice_data.num_voices):
@@ -158,7 +143,7 @@ def makeGlobalStaffDef(cmmetree, staffgrp):
 			label = ET.SubElement(staffdef, 'label')
 			label.text = voice.name
 		# Clef
-		cmmeclef = findClefForVoiceNum(cmmetree, i)
+		cmmeclef = findClefForVoiceNum(cmmetree, i + 1)
 		if cmmeclef:
 			staffdef.append(convertClef(cmmeclef))
 		## Do all this again for mens and sig
@@ -174,7 +159,7 @@ def makeSectionElement(cmme_musicsection):
 	#  do not use @notationtype, because in CMME
 	#  this is still mensural notation - it's 
 	#  just chant. 
-	section = ET.Element('section',ns)
+	section = ET.Element('section')
 	if cmme_musicsection.content.section_type == "Plainchant":
 		section.set("type", "Plainchant")
 	return section
@@ -248,42 +233,6 @@ def makeMensuration():
 	# 	Infer from <Sign> O|C -> @tempus 3/2 && <Dot/>|!<Dot/> -> 3/2
 	# 	Read then from <MensInfo> 
 	return False
-
-# ----------------------- #
-# event-related functions #
-# ----------------------- #
-
-
-def makeNote():
-	# create <note> from <Note>
-	# then converPitch()
-	# convertDuration()
-	# convertModernTexttoLyrics()
-	return False
-
-def convertPitch():
-	# <LetterName>D</LetterName> -> @pname
-    # <OctaveNum>3</OctaveNum> -> @oct
-	# octave count differs in cmme, octave starts at a
-	# a(4) & b(4) are identical in cmme and mei
-	# if range(c:g) => oct = oct + 1
-
-		return False
-	
-def convertDuration():
-
-	# <Type> value="Semifusa|Fusa|Semiminima|Minima|Semibrevis|Brevis|Longa|Maxima"	# <Type> to @dur de-capitalize first letter, like Maxima -> maxima
-	# <Length> containing <Num>/<Den> use 1/1 for	minima
-	# everything smaller than minima is always binary, e.g. 1/2 for semiminima
-	# cmme stores relative durations always in ever
-	return False
-
-
-
-
-
-
-
 
 
 # Get the CMME tree
