@@ -3,6 +3,7 @@ from cmme2mei import import_score
 ET.register_namespace("", "http://www.music-encoding.org/ns/mei")
 ns = {"":"http://www.music-encoding.org/ns/mei"}
 currentScore = False
+clefShapes = ["C", "F", "G", "Gamma", "Frnd", "MODERNC", "MODERNF","MODERNC", "MODERNC"]
 
 # ------------------------------ #
 # MEI document-related functions #
@@ -12,7 +13,7 @@ def createMEIDoc():
 	meitree = ET.parse("./MEI-mensural-skeleton.mei")
 	return meitree
 
-def writeMEI(meitree, filename):
+def writeMEIDoc(meitree, filename):
 	# Write output MEI file
 	# FIXME: no schema attributes
 	meitree.write(filename,'utf-8', xml_declaration=True)
@@ -33,32 +34,33 @@ def addMetadata(meitree, cmmeObject):
 # auxiliary functions #
 # ------------------- #
 def convertStaffLoc(cmmeStaffLoc):
-	return str(int(cmmeStaffLoc) - 1)
+	return str((int(cmmeStaffLoc) + 1) / 2)
 
 def getVoiceNumber():
+	return False
 
 # ------------------ #
 # STAFFDEF FUNCTIONS
 # ------------------ #
 
-# clef-related functions #
-# ---------------------- #
-def isClef(cmmeClef):
-	return (type(cmmeClef).__name__ == "ClefEvent" 
-		and cmmeClef.appearance in ["C", "F", "G", "Gamma", "Frnd", "MODERNC", "MODERNF","MODERNC", "MODERNC"])
+# clef-related functions (MEI) #
+# ---------------------------- #
+def isClef(event):
+	return (type(event).__name__ == "ClefEvent" 
+		and event.appearance in clefShapes)
 
 def convertClef(cmmeClef):
-	meiClef = ET.Element('clef',ns)
+	meiClef = ET.Element('clef')
 	meiClef.set('shape', cmmeClef.appearance)
 	meiClef.set('line', convertStaffLoc(cmmeClef.staff_loc))
 	return meiClef
 
-def makeClefElement(staffDef, cmme_section, n):	
+def makeClefElement(staffDef, cmme_section, n):
 	# makes <clef> or <keySig> from <Clef>
 	# CMME uses <Clef> for clefs and signatures (having <Signature> as child)
 	# Clef <Appearance>: C, G, Gamma, Frnd... maybe MODERNG|MODERNG8|MODERNF|MODERNC
 	# Signature <Appearance>: Bmol, BmolDouble, Bqua, Diesis
-	# What about Fis and Fsqr???	
+	# What about Fis and Fsqr???
 	# Clef
 	voice_n = cmme_section.content.voices[n]
 	# ASSUMPTION:
@@ -69,10 +71,48 @@ def makeClefElement(staffDef, cmme_section, n):
 	cmmeClef = voice_n.event_list.events[0]
 	if isClef(cmmeClef):
 		return convertClef(cmmeClef)
-	else: 
+	else:
 		print("First element isn't a clef. We should probably do something")
 	# else warn, but make staffdef without clef?
 
+
+# clef-related functions (cmme) #
+# ----------------------------- #
+def findClefInVoice(cmmeVoice):
+	# If this voice part begins with a clef, return it
+	for event in cmmeVoice.event_list.events:
+		if isClef(event):
+			return event
+		elif type(event).__name__ == "VariantReadings":
+			# If we have a default/preferred variant, check it for a clef
+			defaultReading = getDefaultReading(event)
+			if defaultReading:
+				for readingEvent in defaultReading.music_events:
+					# Is the first event a clef?
+					if isClef(readingEvent):
+						return readingEvent
+					elif type(event).__name__ in ['NoteEvent', 'RestEvent']:
+						return False
+				return False
+			return False
+		elif type(event).__name__ in ['NoteEvent', 'RestEvent']:
+			return False
+	return False
+
+def getDefaultReading(variantReadings):
+	for reading in variantReadings:
+		if reading.preferred_reading or "DEFAULT" in reading.variant_version_ids:
+			return reading
+	# If we reach here, there is no default. Should we just the return one, or just return false?
+	return False
+
+
+def findClefForVoiceNum(cmmetree, voiceNum):
+	# Search for the first clef in a CMME object given voice number
+	for section in cmmetree.music_sections:
+		for voice in section.content.voices:
+			if voice.voice_num == voiceNum:
+				return findClefInVoice(voice)
 
 # key signature-related functions #
 # ------------------------------- #
@@ -92,7 +132,7 @@ def makeMensElement(staffDef, cmme_section, n):
 
 # make staffDef functions #
 # ----------------------- #
-def makeStaffDefs(cmme_section, staffgrp):
+""" def makeStaffDefs(cmme_section, staffgrp):
 	for i in range(cmme_section.content.num_voices):
 		staffdef = ET.SubElement(staffgrp, 'staffDef')
 		staffdef.set('lines', '5')
@@ -105,29 +145,67 @@ def makeStaffDefs(cmme_section, staffgrp):
 			staffdef.append(mens)
 		sig = makeSignatureElement(staffdef, cmme_section, i)
 		if sig:
-			staffdef.append(sig)
+			staffdef.append(sig) """
+
+def makeGlobalStaffDef(cmmetree, staffgrp):
+	# A global list of voices (rather than one per section)
+	for i in range(cmmetree.voice_data.num_voices):
+		staffdef = ET.SubElement(staffgrp, 'staffDef')
+		# CMME can't represent other numbers of stafflines
+		staffdef.set('lines', '5')
+		voice = cmmetree.voice_data.voices[i]
+		if voice.name:
+			label = ET.SubElement(staffdef, 'label')
+			label.text = voice.name
+		# Clef
+		cmmeclef = findClefForVoiceNum(cmmetree, i)
+		if cmmeclef:
+			staffdef.append(convertClef(cmmeclef))
+		## Do all this again for mens and sig
 
 # ----------------------------------- #
 # mdiv- and section-related functions #
 # ----------------------------------- #
 def makeSectionElement(cmme_musicsection):
+	# Make MEI section for this section
+	# If the section is 'plainchant', we need
+	#  some invisible staves for tacet voices
+	#  and probably a @type attribute. We
+	#  do not use @notationtype, because in CMME
+	#  this is still mensural notation - it's 
+	#  just chant. 
+	section = ET.Element('section',ns)
+	if cmme_musicsection.content.section_type == "Plainchant":
+		section.set("type", "Plainchant")
+	return section
 	
 
 
-def makeMdivElement(cmme_musicsection):
+def makeMdivElement(cmme_musicsection, cmmetree):
 	# mdiv -> score -> scoreDef -> staffGrp
-	mdiv = ET.Element('mdiv',ns)
+	mdiv = ET.Element('mdiv')
 	score = ET.SubElement(mdiv, 'score')
 	currentScore = score
 	scoredef = ET.SubElement(score, 'scoreDef')
 	staffgrp = ET.SubElement(scoredef, 'staffGrp')
-	makeStaffDefs(cmme_musicsection, staffgrp)
+	makeGlobalStaffDef(cmmetree, staffgrp)
 	# mdiv -> score -> section
 	score.append(makeSectionElement(cmme_musicsection))
 	return mdiv
 
-
 def makeSections(meitree, cmmetree):
+	# Since: a) we know the max number of voices b) we can have non-shown staves 
+	# for inactive voices in a section c) the plainchant in CMME is really 
+	# mensural transcription of chant, we don't need multiple MDivs
+	meibody = meitree.find('.//body',ns)
+	for cmme_musicsection in cmmetree.music_sections:
+		if currentScore:
+			currentScore.append(makeSectionElement(cmme_musicsection))
+		else:
+			# This should only happen for the first section
+			meibody.append(makeMdivElement(cmme_musicsection, cmmetree))
+
+""" def makeSections(meitree, cmmetree):
 	# creates sections or mDivs from <MusicSection>
 	# <section> if voice numbers stay identical, <mDiv> if voice number changes
 	# children of <MusicSection> are either <Plainchant> or <MensuralMusic>
@@ -150,11 +228,11 @@ def makeSections(meitree, cmmetree):
 			else:
 				# error
 				print("Missing score element")
-
+ """
 
 def makeStaffs():
 	# makes a <staff> element within <section> for each <Voice> descendant in <MusicSection>
-
+	return False
 
 def makeMensuration():
 	# creates a <mensur> element from <Mensuration>
@@ -166,6 +244,10 @@ def makeMensuration():
 	# <MensInfo> contains <Prolatio>, <Tempus>, <ModusMinor>, <ModusMaior> always 2 or 3
 	#	and <TempoChange> containing <Num> & <Den>
 	# <Mensuration> contains <MensInfo> only if you add it explicitly in the editor
+	# 	CMME assumes a binary default: add @tempus/@prolatio/@modusminor/@modusminor="2" if there is nothing else
+	# 	Infer from <Sign> O|C -> @tempus 3/2 && <Dot/>|!<Dot/> -> 3/2
+	# 	Read then from <MensInfo> 
+	return False
 
 # ----------------------- #
 # event-related functions #
@@ -174,9 +256,10 @@ def makeMensuration():
 
 def makeNote():
 	# create <note> from <Note>
-	# <T
-pe> value="Semifusa|Fusa|Semiminima|Minima|Semibrevis|Brevis|Longa|Maxima"
-	# <Length> containing <Num>/<Den>
+	# then converPitch()
+	# convertDuration()
+	# convertModernTexttoLyrics()
+	return False
 
 def convertPitch():
 	# <LetterName>D</LetterName> -> @pname
@@ -185,16 +268,28 @@ def convertPitch():
 	# a(4) & b(4) are identical in cmme and mei
 	# if range(c:g) => oct = oct + 1
 
+		return False
+	
 def convertDuration():
-	# <Type> to @dur de-capitalize first letter, like Maxima -> maxima
+
+	# <Type> value="Semifusa|Fusa|Semiminima|Minima|Semibrevis|Brevis|Longa|Maxima"	# <Type> to @dur de-capitalize first letter, like Maxima -> maxima
 	# <Length> containing <Num>/<Den> use 1/1 for	minima
 	# everything smaller than minima is always binary, e.g. 1/2 for semiminima
-	# cmme stores relative durations always in every note/rest, one can figure out mensuration from that
-	# 
+	# cmme stores relative durations always in ever
+	return False
+
+
+
+
+
+
+
 
 
 # Get the CMME tree
 cmmetree = import_score("Anonymous-CibavitEos-BrusBRIV922.cmme.xml")
 meitree = createMEIDoc()
 #### some code
-writeMEI(meitree, "output.mei")
+addMetadata(meitree, cmmetree)
+makeSections(meitree, cmmetree)
+writeMEIDoc(meitree, "output.mei")
