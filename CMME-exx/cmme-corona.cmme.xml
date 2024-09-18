@@ -23,21 +23,35 @@
         <EventList>
           <Clef>
             <Appearance>C</Appearance>
-            <StaffLoc>5</StaffLoc>
+            <StaffLoc>1</StaffLoc>
             <Pitch>
               <LetterName>C</LetterName>
               <OctaveNum>3</OctaveNum>
             </Pitch>
           </Clef>
           <Note>
-            <Type>Semibrevis</Type>
+            <Type>Longa</Type>
             <Length>
-              <Num>2</Num>
+              <Num>8</Num>
               <Den>1</Den>
             </Length>
-            <LetterName>C</LetterName>
+            <LetterName>A</LetterName>
             <OctaveNum>3</OctaveNum>
-            <Corona />
+                    <Corona>
+                      <Orientation>Down</Orientation>
+                    </Corona>
+          </Note>
+          <Note>
+            <Type>Longa</Type>
+            <Length>
+              <Num>8</Num>
+              <Den>1</Den>
+            </Length>
+            <LetterName>A</LetterName>
+            <OctaveNum>3</OctaveNum>
+            <Signum>
+              <Orientation>Down</Orientation>
+            </Signum>
           </Note>
         </EventList>
       </Voice>
