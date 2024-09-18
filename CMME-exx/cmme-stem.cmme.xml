@@ -23,7 +23,7 @@
         <EventList>
           <Clef>
             <Appearance>C</Appearance>
-            <StaffLoc>3</StaffLoc>
+            <StaffLoc>5</StaffLoc>
             <Pitch>
               <LetterName>C</LetterName>
               <OctaveNum>3</OctaveNum>
@@ -35,22 +35,17 @@
               <Strokes>1</Strokes>
             </Sign>
           </Mensuration>
-          <Clef>
-            <Appearance>Bmol</Appearance>
-            <StaffLoc>2</StaffLoc>
-            <Pitch>
-              <LetterName>B</LetterName>
-              <OctaveNum>3</OctaveNum>
-            </Pitch>
-          </Clef>
           <Note>
-            <Type>Semibrevis</Type>
+            <Type>Minima</Type>
             <Length>
-              <Num>2</Num>
+              <Num>1</Num>
               <Den>1</Den>
             </Length>
-            <LetterName>B</LetterName>
+            <LetterName>A</LetterName>
             <OctaveNum>3</OctaveNum>
+            <Stem>
+              <Dir>Left</Dir>
+            </Stem>
           </Note>
         </EventList>
       </Voice>
